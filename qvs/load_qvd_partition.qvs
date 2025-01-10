@@ -1,0 +1,63 @@
+// Функция для загрузки QVD-файлов по заданному периоду
+SUB LoadQVDByPeriod(vInputPath, vFilePrefix, vFileDelimiter, vDateFrom, vDateTo, vTableName)
+    TRACE *** Начало загрузки QVD-файлов за указанный период ***;
+
+    // Проверка валидности периодов
+    IF Date('$(vDateFrom)') > Date('$(vDateTo)') THEN
+        TRACE Ошибка: vDateFrom > vDateTo;
+        Exit Script;
+    END IF;
+
+    // Переменные для итерации
+    LET vCurrentDate = Date(MonthStart('$(vDateFrom)')); // Начало периода
+    LET vEndDate = Date(MonthStart('$(vDateTo)')); // Конец периода
+
+    TRACE Загрузка данных с $(vDateFrom) по $(vDateTo);
+    
+    // Объединенная таблица для всех данных
+    $(vTableName):
+    LOAD Null() AS dummy_field
+    AUTOGENERATE 0;
+
+    // Цикл по месяцам
+    DO WHILE vCurrentDate <= vEndDate;
+        // Форматирование периода (ГГГГ-ММ)
+        LET vYearMonth = Date(vCurrentDate, 'YYYY-MM');
+        TRACE Загрузка файла за период: $(vYearMonth);
+
+        // Формирование имени файла
+        LET vQVDFile = '$(vInputPath)$(vFilePrefix)$(vFileDelimiter)$(vYearMonth).qvd';
+        TRACE Попытка загрузки файла: $(vQVDFile);
+
+        // Проверка существования файла
+        IF FileSize('$(vQVDFile)') > 0 THEN
+            TRACE Файл найден. Выполняется загрузка: $(vQVDFile);
+            // Загрузка данных
+            Concatenate($(vTableName))
+            LOAD *
+            FROM [$(vQVDFile)] (qvd);
+        ELSE
+            TRACE Внимание: файл $(vQVDFile) не найден. Пропуск периода $(vYearMonth);
+        END IF;
+
+        // Переход к следующему месяцу
+        LET vCurrentDate = Date(AddMonths(vCurrentDate, 1));
+    LOOP;
+
+    // Очистка служебной строки
+    DROP FIELD dummy_field FROM $(vTableName);
+
+    TRACE *** Загрузка данных из QVD завершена ***;
+END SUB;
+
+
+// Инициализация параметров для загрузки
+LET vTableName = 'iris_project';
+LET vInputPath = 'lib://File Share Sense/QVD/Test/iris_project/'; // Путь к QVD-файлам
+LET vFilePrefix = 'iris_project'; // Префикс имени файла
+LET vFileDelimiter = '_pt_'; // Разделитель в именах файлов
+LET vDateFrom = MakeDate(2024,7,1); // Начальная дата
+LET vDateTo = MakeDate(2024,9,30); // Конечная дата
+
+// Вызов функции
+CALL LoadQVDByPeriod(vInputPath, vFilePrefix, vFileDelimiter, vDateFrom, vDateTo, vTableName);
