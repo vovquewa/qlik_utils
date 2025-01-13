@@ -85,7 +85,7 @@ LET vDateField = 'projectdate'; // Поле с датой
 LET vOutputPath = 'lib://File Share Sense/QVD/Test/test_table/'; // Путь для сохранения QVD
 LET vFilePrefix = 'test_table'; // Префикс для имени файла
 LET vCustomLoad = '*'; // Кастомное содержимое для LOAD
-LET vCustomSelect = '*';
+LET vCustomSelect = '*'; // Кастомное содержимое для SQL SELECT
 LET vTableAlias = ''; // Алиас при необходимости для JOIN
 LET vJoinCondition = ''; // Условие Join
 LET vDateFrom = MonthStart(AddMonths(Today(), -6)); // Начальная дата
@@ -93,6 +93,3 @@ LET vDateTo = Today(); // Конечная дата
 
 // Вызов функции
 CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
-
-
-
