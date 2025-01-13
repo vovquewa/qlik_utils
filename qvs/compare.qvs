@@ -1,5 +1,5 @@
-// Функция для загрузки данных по месяцам и сохранения в файлы QVD
-SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter)
+
+SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vDateFrom, vDateTo, vFileDelimiter)
     // Подготовка временных переменных
     TRACE *** Инициализация переменных для загрузки данных ***;
     
@@ -39,15 +39,14 @@ SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPat
         TRACE Загрузка данных из таблицы: $(vSchema).$(vTableName);
         TempTable:
         LOAD $(vCustomLoad);
-        SQL SELECT $(vCustomSelect)
-        FROM $(vSchema).$(vTableName) $(vTableAlias)
-        $(vJoinCondition)
+        SQL SELECT *
+        FROM $(vSchema).$(vTableName)
         WHERE $(vDateField) >= '$(vStartDateFormatted)' AND $(vDateField) < '$(vEndDateFormatted)';
 
         // Проверка на пустую таблицу
         IF NoOfRows('TempTable') > 0 THEN
             LET vOutputFile = '$(vOutputPath)$(vFilePrefix)$(vFileDelimiter)$(vYearMonth).qvd';
-            TRACE Таблица TempTable не пуста. Сохранение данных в файл: $(vOutputFile);
+            TRACE Таблица не пуста. Сохранение данных в файл: $(vOutputFile);
             STORE TempTable INTO [$(vOutputFile)] (qvd);
         ELSE
             TRACE Таблица TempTable пуста. Сохранение отменено для периода: $(vYearMonth);
@@ -75,24 +74,3 @@ SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPat
 
     TRACE *** Загрузка данных завершена ***;
 END SUB;
-
-// Инициализация параметров функции
-LET vDataConnection = 'PostgreSQL35W'; // Подключение к базе данных через подключение, настроенное в Qlik Sense
-LET vSchema = 'public'; // Схема базы данных
-LET vFileDelimiter = '_pt_'; // Разделитель в именах файлов
-LET vTableName = 'test_table'; // Имя таблицы
-LET vDateField = 'projectdate'; // Поле с датой
-LET vOutputPath = 'lib://File Share Sense/QVD/Test/test_table/'; // Путь для сохранения QVD
-LET vFilePrefix = 'test_table'; // Префикс для имени файла
-LET vCustomLoad = '*'; // Кастомное содержимое для LOAD
-LET vCustomSelect = '*';
-LET vTableAlias = ''; // Алиас при необходимости для JOIN
-LET vJoinCondition = ''; // Условие Join
-LET vDateFrom = MonthStart(AddMonths(Today(), -6)); // Начальная дата
-LET vDateTo = Today(); // Конечная дата
-
-// Вызов функции
-CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
-
-
-
