@@ -1,5 +1,5 @@
 // Функция для загрузки данных по месяцам и сохранения в файлы QVD
-SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter)
+SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter)
     // Подготовка временных переменных
     TRACE *** Инициализация переменных для загрузки данных ***;
     
@@ -42,7 +42,8 @@ SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPat
         SQL SELECT $(vCustomSelect)
         FROM $(vSchema).$(vTableName) $(vTableAlias)
         $(vJoinCondition)
-        WHERE $(vDateField) >= '$(vStartDateFormatted)' AND $(vDateField) < '$(vEndDateFormatted)';
+        WHERE $(vDateField) >= '$(vStartDateFormatted)' AND $(vDateField) < '$(vEndDateFormatted)'
+        $(vGroupBy);
 
         // Проверка на пустую таблицу
         IF NoOfRows('TempTable') > 0 THEN
@@ -80,16 +81,18 @@ END SUB;
 LET vDataConnection = 'PostgreSQL35W'; // Подключение к базе данных через подключение, настроенное в Qlik Sense
 LET vSchema = 'public'; // Схема базы данных
 LET vFileDelimiter = '_pt_'; // Разделитель в именах файлов
-LET vTableName = 'test_table'; // Имя таблицы
+LET vTableName = 'table'; // Имя таблицы
 LET vDateField = 'projectdate'; // Поле с датой
-LET vOutputPath = 'lib://File Share Sense/QVD/Test/test_table/'; // Путь для сохранения QVD
-LET vFilePrefix = 'test_table'; // Префикс для имени файла
+LET vOutputPath = 'lib://File Share Sense/QVD/HSR24/table/'; // Путь для сохранения QVD
+LET vFilePrefix = 'table'; // Префикс для имени файла
 LET vCustomLoad = '*'; // Кастомное содержимое для LOAD
-LET vCustomSelect = '*'; // Кастомное содержимое для SQL SELECT
-LET vTableAlias = ''; // Алиас при необходимости для JOIN
-LET vJoinCondition = ''; // Условие Join
-LET vDateFrom = MonthStart(AddMonths(Today(), -6)); // Начальная дата
-LET vDateTo = Today(); // Конечная дата
+LET vCustomSelect = '*';
+LET vGroupBy = '';
+LET vTableAlias = '';
+LET vJoinCondition = '';
+LET vDateFrom = MakeDate(2016,3,1); // Начальная дата
+LET vDateTo = Date(MonthStart(AddMonths(Today(), -2)) - 1); // Конечная дата
+
 
 // Вызов функции
-CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
+CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
