@@ -1,5 +1,5 @@
 // Функция для загрузки данных по месяцам и сохранения в файлы QVD
-SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter)
+SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vWhereExtended, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter)
     // Подготовка временных переменных
     TRACE *** Инициализация переменных для загрузки данных ***;
     
@@ -42,7 +42,7 @@ SUB LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPat
         SQL SELECT $(vCustomSelect)
         FROM $(vSchema).$(vTableName) $(vTableAlias)
         $(vJoinCondition)
-        WHERE $(vDateField) >= '$(vStartDateFormatted)' AND $(vDateField) < '$(vEndDateFormatted)'
+        WHERE $(vDateField) >= '$(vStartDateFormatted)' AND $(vDateField) < '$(vEndDateFormatted)' $(vWhereExtended)
         $(vGroupBy);
 
         // Проверка на пустую таблицу
@@ -87,6 +87,7 @@ LET vOutputPath = 'lib://File Share Sense/QVD/HSR24/table/'; // Путь для 
 LET vFilePrefix = 'table'; // Префикс для имени файла
 LET vCustomLoad = '*'; // Кастомное содержимое для LOAD
 LET vCustomSelect = '*';
+LET vWhereExtended = '';
 LET vGroupBy = '';
 LET vTableAlias = '';
 LET vJoinCondition = '';
@@ -95,4 +96,4 @@ LET vDateTo = Date(MonthStart(AddMonths(Today(), -2)) - 1); // Конечная 
 
 
 // Вызов функции
-CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
+CALL LoadDataByMonth(vDataConnection, vSchema, vTableName, vDateField, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vWhereExtended, vGroupBy, vTableAlias, vJoinCondition, vDateFrom, vDateTo, vFileDelimiter);
