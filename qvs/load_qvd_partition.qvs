@@ -1,5 +1,7 @@
 // Функция для загрузки QVD-файлов по заданному периоду
-SUB LoadQVDByPeriod(vInputPath, vFilePrefix, vFileDelimiter, vDateFrom, vDateTo, vTableName)
+SUB LoadQVDByPeriod(vInputPath, vFilePrefix, vCustomLoad, vWhereExistsCondition, vFileDelimiter, vDateFrom, vDateTo, vTableName)
+    LET _vQVD = '(qvd)';
+    
     TRACE *** Начало загрузки QVD-файлов за указанный период ***;
 
     // Проверка валидности периодов
@@ -34,8 +36,9 @@ SUB LoadQVDByPeriod(vInputPath, vFilePrefix, vFileDelimiter, vDateFrom, vDateTo,
             TRACE Файл найден. Выполняется загрузка: $(vQVDFile);
             // Загрузка данных
             Concatenate($(vTableName))
-            LOAD *
-            FROM [$(vQVDFile)] (qvd);
+            LOAD $(vCustomLoad)
+            
+            FROM [$(vQVDFile)] $(_vQVD) $(vWhereExistsCondition);
         ELSE
             TRACE Внимание: файл $(vQVDFile) не найден. Пропуск периода $(vYearMonth);
         END IF;
@@ -55,9 +58,11 @@ END SUB;
 LET vTableName = 'iris_project';
 LET vInputPath = 'lib://File Share Sense/QVD/Test/iris_project/'; // Путь к QVD-файлам
 LET vFilePrefix = 'iris_project'; // Префикс имени файла
+LET vCustomLoad = '*';
+LET vWhereExistsCondition = ''; // Пример 'where exists(name)'
 LET vFileDelimiter = '_pt_'; // Разделитель в именах файлов
 LET vDateFrom = MakeDate(2024,7,1); // Начальная дата
-LET vDateTo = MakeDate(2024,9,30); // Конечная дата
+LET vDateTo = MakeDate(2025,9,30); // Конечная дата
 
 // Вызов функции
-CALL LoadQVDByPeriod(vInputPath, vFilePrefix, vFileDelimiter, vDateFrom, vDateTo, vTableName);
+CALL LoadQVDByPeriod(vInputPath, vFilePrefix, vCustomLoad, vWhereExistsCondition, vFileDelimiter, vDateFrom, vDateTo, vTableName);
