@@ -1,0 +1,98 @@
+// Функция для загрузки данных по месяцам из катосмного запроса и сохранения в файлы QVD
+SUB LoadDataByMonthCustomQuery(vDataConnection, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vDateFrom, vDateTo, vFileDelimiter)
+    // Подготовка временных переменных
+    TRACE *** Инициализация переменных для загрузки данных ***;
+    
+    IF Date('$(vDateFrom)') > Date('$(vDateTo)') THEN
+    	TRACE Ошибка: vDateFrom > vDateTo;
+        Exit Script;
+    END IF;
+    
+	LET vEndDate = Date('$(vDateTo)'); // Конец периода
+    LET vStartDate = Date(MonthStart('$(vEndDate)')); // Начало последнего месяца
+
+    TRACE Подключение к базе данных: $(vDataConnection);
+    LIB CONNECT TO $(vDataConnection);
+
+    // Цикл по месяцам
+    TRACE *** Начало цикла по месяцам ***;
+    DO WHILE vEndDate >= vDateFrom;
+
+        TRACE Обработка периода: $(vStartDate) - $(vEndDate);
+
+        // Проверка на последнюю итерацию
+        IF vStartDate < vDateFrom THEN
+            LET vStartDate = vDateFrom; // Если последняя итерация, загрузка строго до vDateFrom
+            TRACE Последняя итерация. Начало периода скорректировано до: $(vStartDate);
+        END IF;
+
+        // Генерация метки для текущего месяца (ГГГГ-ММ)
+        LET vYearMonth = Date(vStartDate, 'YYYY-MM');
+        TRACE Генерация данных для месяца: $(vYearMonth);
+
+        // Обработка периода для запроса
+		// Переводим в формат чистой даты и добавляем 1 день 
+        LET vStartDateFormatted = Date(vStartDate, 'YYYY-MM-DD');
+        LET vEndDateFormatted = Date(vEndDate + 1, 'YYYY-MM-DD');
+
+        // Загрузка данных за текущий период
+        TRACE Загрузка данных:;
+        // Формирование запроса
+        LET vQuery = Replace(Replace('$(vCustomSelect)','vFrom','$(vStartDateFormatted)'), 'vTo', '$(vEndDateFormatted)');
+        TRACE Запрос:;
+        TRACE $(vQuery);
+        TempTable:
+        LOAD $(vCustomLoad);
+        SQL
+        $(vQuery);
+
+        // Проверка на пустую таблицу
+        IF NoOfRows('TempTable') > 0 THEN
+            LET vOutputFile = '$(vOutputPath)$(vFilePrefix)$(vFileDelimiter)$(vYearMonth).qvd';
+            TRACE Таблица TempTable не пуста. Сохранение данных в файл: $(vOutputFile);
+            STORE TempTable INTO [$(vOutputFile)] (qvd);
+        ELSE
+            TRACE Таблица TempTable пуста. Сохранение отменено для периода: $(vYearMonth);
+        END IF;
+
+        // Очистка временной таблицы
+        TRACE Очистка временной таблицы TempTable;
+        DROP TABLE TempTable;
+        
+        // Если это последняя итерация, выйти из цикла
+        IF vStartDate = vDateFrom THEN
+            TRACE Последний период обработан. Завершение цикла;
+            EXIT DO; // Завершаем цикл
+        END IF;
+        
+        // Переход к предыдущему месяцу
+        LET vEndDate = Date(MonthStart(vStartDate) - 1);
+        LET vStartDate = Date(MonthStart(vEndDate));
+
+    LOOP;
+
+    TRACE Отключение от базы данных;
+    // Отключение от базы данных
+    DISCONNECT;
+
+    TRACE *** Загрузка данных завершена ***;
+END SUB;
+
+// Инициализация параметров функции
+LET vDataConnection = 'PostgreSQL35W_HSR24'; // Подключение к базе данных через подключение, настроенное в Qlik Sense
+LET vFileDelimiter = '_pt_'; // Разделитель в именах файлов
+LET vOutputPath = 'lib://File Share Sense/QVD/HSR24/iris_project/'; // Путь для сохранения QVD
+LET vFilePrefix = 'iris_project'; // Префикс для имени файла
+LET vCustomLoad = '*';// Кастомное содержимое для LOAD
+SET vCustomSelect = '
+SELECT *
+FROM iris_project
+WHERE projectdate >= ''vFrom''
+    AND projectdate < ''vTo''
+'; // Обяхательно наличие переменных периода vFrom и vTo
+LET vDateFrom = MakeDate(2016,3,1); // Начальная дата
+LET vDateTo = Date(MonthStart(AddMonths(Today(), -2)) - 1); // Конечная дата
+
+
+// Вызов функции
+CALL LoadDataByMonthCustomQuery(vDataConnection, vOutputPath, vFilePrefix, vCustomLoad, vCustomSelect, vDateFrom, vDateTo, vFileDelimiter);
